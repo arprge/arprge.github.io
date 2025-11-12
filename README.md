@@ -1,37 +1,45 @@
-# Library Management System
+# Library Web App
 
-University project for library book management with reading lists functionality.
+A small, focused web app to browse a library catalog, search books, and keep simple reading lists.
 
 ## Features
 
-- Book catalog browsing
-- Search by title, author, or genre
-- Track read/plan-to-read books
-- Library schedule and floor plan
-- Responsive design
+- Browse catalog and view book details
+- Search by title, author, or genre (Open Library API)
+- Personal lists: reading, plan-to-read (Local Storage)
+- Library hours and simple floor plan
+- Responsive layout
 
 ## Structure
 
 ```
 library/
-├── assets/
-│   ├── css/        # Stylesheets
-│   ├── js/         # JavaScript
-│   ├── images/     # Images
-│   └── data/       # Book data
-├── index.html
-├── about.html
-├── search.html
-└── my-books.html
+├─ assets/
+│  ├─ css/
+│  ├─ js/
+│  ├─ images/
+│  └─ data/
+├─ index.html
+├─ search.html
+├─ my-books.html
+└─ about.html
 ```
 
-## Usage
+## Run
 
-Open `index.html` in your browser.
+Option 1: open `index.html` directly in a browser.
 
-## Tech Stack
+Option 2 (recommended for API/local data): start a tiny server, then open the shown URL.
 
-- HTML5, CSS3, JavaScript
-- Local Storage for data persistence
+```powershell
+python -m http.server 5500
+# or
+npx serve .
+```
 
-**Алжан Алан** - 2025
+## Tech
+
+- HTML, CSS, JavaScript
+- Local Storage for lists
+- Open Library API for search
+
