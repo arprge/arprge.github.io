@@ -32,6 +32,5 @@ Open `index.html` in your browser.
 ## Tech Stack
 
 - HTML5, CSS3, JavaScript
-- Local Storage for data persistence
 
-**Алжан Алан** - 2025
+Used openlibrary API for the search
