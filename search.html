@@ -57,7 +57,7 @@
                     <h3>Сүзгілер</h3>
                     <div class="filter-group">
                         <label for="genreFilter">Жанр:</label>
-                        <select id="genreFilter" class="filter-select">
+                        <select id="genreFilter" class="filter-select" data-default-label="Барлық жанрлар">
                             <option value="">Барлық жанрлар</option>
                             <option value="Классика">Классика</option>
                             <option value="Фантастика">Фантастика</option>
@@ -71,6 +71,7 @@
 
                 <div id="searchResults" class="search-results">
                     <div id="resultsCount" class="results-count"></div>
+                    <div id="resultsMeta" class="results-meta" aria-live="polite"></div>
                     <div id="booksGrid" class="books-grid">
                         <!-- Результаты поиска будут отображаться здесь -->
                     </div>
@@ -90,10 +91,5 @@
 
     <script src="assets/data/books-data.js"></script>
     <script src="assets/js/script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            initSearch();
-        });
-    </script>
 </body>
 </html>

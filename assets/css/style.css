@@ -241,6 +241,34 @@ main {
     margin-top: 2rem;
 }
 
+.section-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header p {
+    color: #5a4632;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.section-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    box-shadow: var(--shadow);
+    font-weight: 600;
+}
+
+.section-message.error {
+    color: #a32828;
+    border-color: #f7caca;
+}
+
 .book-card {
     background-color: white;
     border-radius: 12px;
@@ -380,6 +408,13 @@ main {
     color: var(--primary-color);
 }
 
+.results-meta {
+    font-size: 0.95rem;
+    color: white;
+    margin-bottom: 0.5rem;
+    opacity: 0.85;
+}
+
 .no-results {
     text-align: center;
     padding: 3rem;
@@ -387,6 +422,18 @@ main {
     border-radius: 12px;
     box-shadow: var(--shadow);
     border: 2px solid var(--border-color);
+}
+
+.search-hint {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 600;
+    backdrop-filter: blur(2px);
 }
 
 /* my list*/

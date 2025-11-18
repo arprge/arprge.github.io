@@ -100,6 +100,10 @@ function createBookCard(book, showActions = true) {
 
 // Глобальный кэш книг для быстрого доступа
 let booksCache = [];
+let currentSearchResults = [];
+let currentSearchSource = '';
+let lastSearchQuery = '';
+let searchInputTimer = null;
 
 function addToRead(bookId) {
     const book = booksCache.find(b => b.id === bookId);
@@ -194,43 +198,76 @@ style.textContent = `
 document.head.appendChild(style);
 
 // === ФУНКЦИИ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ ===
-/*async function displayPopularBooks() {
+async function displayPopularBooks() {
     const grid = document.getElementById('popularBooksGrid');
     if (!grid) return;
-    
-    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Загрузка книг...</div>';
-    
+
+    grid.setAttribute('aria-busy', 'true');
+    grid.innerHTML = '<div class="section-message">Танымал кітаптар жүктелуде...</div>';
+
     try {
-        const popularBooks = await getPopularBooks();
-        booksCache = [...popularBooks]; // Обновляем кэш
+        const popularBooks = await getPopularBooks(6);
+        if (!popularBooks.length) {
+            grid.innerHTML = '<div class="section-message error">Қазір танымал кітаптар қолжетімсіз.</div>';
+            return;
+        }
+
+        booksCache = [...popularBooks];
         grid.innerHTML = '';
         popularBooks.forEach(book => {
             grid.appendChild(createBookCard(book));
         });
     } catch (error) {
-        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: red;">Ошибка загрузки книг</div>';
+        console.error('Популяр кітаптарды жүктеу қатесі:', error);
+        grid.innerHTML = '<div class="section-message error">Қазір кітаптарды көрсету мүмкін емес.</div>';
+    } finally {
+        grid.removeAttribute('aria-busy');
     }
-} */
+}
 
 // === ФУНКЦИИ ДЛЯ СТРАНИЦЫ ПОИСКА ===
 function initSearch() {
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
     const genreFilter = document.getElementById('genreFilter');
-    
-    // Не показываем результаты при загрузке
-    document.getElementById('booksGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: white;">Іздеуді бастау үшін кітаптың атын немесе авторды енгізіңіз.</div>';
-    
-    // Поиск по клику
-    searchBtn.addEventListener('click', performSearch);
-    
-    // Поиск по Enter
+    const grid = document.getElementById('booksGrid');
+
+    if (!searchInput || !searchBtn || !grid) {
+        return;
+    }
+
+    showSearchIntro();
+
+    const triggerSearch = () => performSearch();
+
+    searchBtn.addEventListener('click', triggerSearch);
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            performSearch();
+            triggerSearch();
         }
     });
-    
+
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchInputTimer);
+        const value = searchInput.value.trim();
+        if (!value) {
+            showSearchIntro();
+            currentSearchResults = [];
+            restoreGenreFilterOptions();
+            return;
+        }
+        searchInputTimer = setTimeout(() => {
+            if (value.length >= 3) {
+                triggerSearch();
+            }
+        }, 450);
+    });
+
+    if (genreFilter) {
+        genreFilter.addEventListener('change', () => {
+            renderFilteredResults();
+        });
+    }
 }
 
 async function performSearch() {
@@ -240,48 +277,157 @@ async function performSearch() {
     const grid = document.getElementById('booksGrid');
     const resultsCount = document.getElementById('resultsCount');
     const noResults = document.getElementById('noResults');
+    const resultsMeta = document.getElementById('resultsMeta');
     
+    if (!query) {
+        showSearchIntro();
+        return;
+    }
+
     // Показываем загрузку
-    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Кітаптарды іздеу...</div>';
+    grid.style.display = 'block';
+    grid.innerHTML = '<div class="search-hint">Кітаптарды іздеу...</div>';
     noResults.style.display = 'none';
     resultsCount.textContent = '';
+    if (resultsMeta) {
+        resultsMeta.textContent = '';
+    }
     
     try {
-        let books;
-        if (!query) {
-            displaySearchResults([]); // Показываем пустые результаты, если запрос пустой
-            return;
-        }
-        books = await searchBooks(query, 30);
-        
-        displaySearchResults(books);
+        lastSearchQuery = query;
+        const { books, source } = await searchBooksWithFallback(query, 40);
+        currentSearchResults = books;
+        currentSearchSource = source;
+        updateGenreFilterOptions(books);
+        renderFilteredResults();
     } catch (error) {
-        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: red;">Іздеу қатесі</div>';
+        console.error('Іздеу қатесі:', error);
+        grid.innerHTML = '<div class="search-hint">Іздеу қатесі. Кейінірек қайталап көріңіз.</div>';
     }
 }
 
-function displaySearchResults(books) {
+function displaySearchResults(books, sourceLabel = '', totalCount = null) {
     const grid = document.getElementById('booksGrid');
     const resultsCount = document.getElementById('resultsCount');
     const noResults = document.getElementById('noResults');
+    const resultsMeta = document.getElementById('resultsMeta');
+    const genreFilter = document.getElementById('genreFilter');
     
     booksCache = [...books]; // Обновляем кэш
     
     if (books.length === 0) {
         grid.style.display = 'none';
         noResults.style.display = 'block';
+        const noResultsText = noResults.querySelector('p');
+        if (noResultsText) {
+            noResultsText.textContent = lastSearchQuery
+                ? `«${lastSearchQuery}» бойынша кітаптар табылмады. Басқа сөздерді қолданып көріңіз.`
+                : 'Кітаптар табылмады. Басқа сұрау енгізіп көріңіз.';
+        }
         resultsCount.textContent = '';
+        if (resultsMeta) {
+            resultsMeta.textContent = sourceLabel ? `Дереккөз: ${sourceLabel}` : '';
+        }
         return;
     }
     
     grid.style.display = 'grid';
     noResults.style.display = 'none';
-    resultsCount.textContent = `Кітаптар: ${books.length}`;
+    const countText = totalCount && totalCount > books.length
+        ? `Нәтижелер: ${books.length} / ${totalCount}`
+        : `Нәтижелер: ${books.length}`;
+    resultsCount.textContent = countText;
+
+    if (resultsMeta) {
+        const metaParts = [];
+        if (sourceLabel) {
+            metaParts.push(`Дереккөз: ${sourceLabel}`);
+        }
+        if (genreFilter && genreFilter.value) {
+            metaParts.push(`Жанр: ${genreFilter.value}`);
+        }
+        resultsMeta.textContent = metaParts.join(' • ');
+    }
     
     grid.innerHTML = '';
     books.forEach(book => {
         grid.appendChild(createBookCard(book));
     });
+}
+
+function renderFilteredResults() {
+    if (!currentSearchResults.length) {
+        return;
+    }
+    const genreFilter = document.getElementById('genreFilter');
+    const selectedGenre = genreFilter ? genreFilter.value : '';
+    const filtered = selectedGenre
+        ? currentSearchResults.filter(book => (book.genre || '').toLowerCase() === selectedGenre.toLowerCase())
+        : currentSearchResults;
+    displaySearchResults(filtered, currentSearchSource, currentSearchResults.length);
+}
+
+function updateGenreFilterOptions(books) {
+    const genreFilter = document.getElementById('genreFilter');
+    if (!genreFilter || !books.length) {
+        return;
+    }
+    if (!genreFilter.dataset.initialOptions) {
+        genreFilter.dataset.initialOptions = genreFilter.innerHTML;
+    }
+    const defaultLabel = genreFilter.getAttribute('data-default-label') || 'Барлық жанрлар';
+    const currentValue = genreFilter.value;
+    const genres = Array.from(new Set(books
+        .map(book => book.genre)
+        .filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'kk'));
+
+    genreFilter.innerHTML = '';
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = defaultLabel;
+    genreFilter.appendChild(defaultOption);
+
+    genres.forEach(genre => {
+        const option = document.createElement('option');
+        option.value = genre;
+        option.textContent = genre;
+        genreFilter.appendChild(option);
+    });
+
+    if (currentValue && genres.includes(currentValue)) {
+        genreFilter.value = currentValue;
+    }
+}
+
+function showSearchIntro() {
+    const grid = document.getElementById('booksGrid');
+    const noResults = document.getElementById('noResults');
+    const resultsCount = document.getElementById('resultsCount');
+    const resultsMeta = document.getElementById('resultsMeta');
+
+    if (grid) {
+        grid.style.display = 'block';
+        grid.innerHTML = '<div class="search-hint">Іздеуді бастау үшін кітаптың атын немесе авторды енгізіңіз.</div>';
+    }
+    if (noResults) {
+        noResults.style.display = 'none';
+    }
+    if (resultsCount) {
+        resultsCount.textContent = '';
+    }
+    if (resultsMeta) {
+        resultsMeta.textContent = '';
+    }
+}
+
+function restoreGenreFilterOptions() {
+    const genreFilter = document.getElementById('genreFilter');
+    if (!genreFilter || !genreFilter.dataset.initialOptions) {
+        return;
+    }
+    genreFilter.innerHTML = genreFilter.dataset.initialOptions;
+    genreFilter.value = '';
 }
 
 // === ФУНКЦИИ ДЛЯ СТРАНИЦЫ "МОИ КНИГИ" ===
@@ -383,3 +529,16 @@ function loadMyBooks() {
         });
     }
 }
+
+// === Глобальный запуск для страниц ===
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('popularBooksGrid')) {
+        displayPopularBooks();
+    }
+    if (document.getElementById('searchInput')) {
+        initSearch();
+    }
+    if (document.querySelector('.my-books-section')) {
+        initMyBooks();
+    }
+});
