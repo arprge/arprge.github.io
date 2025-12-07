@@ -1,8 +1,5 @@
 {
   "name": "library",
   "compatibility_date": "2025-12-07",
-  "main": "src/index.ts",
-  "site": {
-    "bucket": "."
-  }
+  "pages_build_output_dir": "."
 }
