@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "Library static site",
   "scripts": {
-    "build": "echo 'Static site, no build needed'",
-    "dev": "wrangler pages dev .",
-    "deploy": "wrangler pages deploy ."
+    "deploy": "echo 'Deploying static site'"
   },
   "devDependencies": {
     "wrangler": "^3.0.0"
