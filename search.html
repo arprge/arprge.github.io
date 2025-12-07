@@ -38,6 +38,7 @@
                     <li><a href="search.html" class="active">Кітап іздеу</a></li>
                     <li><a href="my-books.html">Менің кітаптарым</a></li>
                     <li><a href="about.html">Кітапхана туралы</a></li>
+                    <li><button class="btn-login" id="loginBtn">Кіру</button></li>
                 </ul>
             </div>
         </nav>
@@ -85,9 +86,44 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 Алжан Алан | Satbayev University</p>
+            <p>&copy; 2025 Aljan Alan | Satbayev University</p>
         </div>
     </footer>
+
+    <!-- Auth modal -->
+    <div id="authModal" class="auth-modal" aria-hidden="true">
+        <div class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+            <button type="button" class="auth-close" id="authClose" aria-label="Жабу">&times;</button>
+            <h2 id="authTitle">Менің Кітапханам аккаунты</h2>
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab active" data-auth-tab="login">Кіру</button>
+                <button type="button" class="auth-tab" data-auth-tab="register">Тіркелу</button>
+            </div>
+            <form id="loginForm" class="auth-form active" data-auth-form="login">
+                <div class="input-group">
+                    <label for="authLogin">Пайдаланушы аты</label>
+                    <input type="text" id="authLogin" required placeholder="Мысалы, Aigerim01">
+                </div>
+                <div class="input-group">
+                    <label for="authPassword">Құпия сөз</label>
+                    <input type="password" id="authPassword" required placeholder="••••••">
+                </div>
+                <button type="submit" class="btn btn-primary">Кіру</button>
+            </form>
+            <form id="registerForm" class="auth-form" data-auth-form="register">
+                <div class="input-group">
+                    <label for="authRegLogin">Пайдаланушы аты</label>
+                    <input type="text" id="authRegLogin" required placeholder="Жаңа логин">
+                </div>
+                <div class="input-group">
+                    <label for="authRegPassword">Құпия сөз</label>
+                    <input type="password" id="authRegPassword" required placeholder="Құпия сөз құрастырыңыз">
+                </div>
+                <button type="submit" class="btn btn-primary">Тіркелу</button>
+            </form>
+            <p class="auth-hint">Бұл тек оқу мақсатындағы демо-форма.</p>
+        </div>
+    </div>
 
     <script src="assets/data/books-data.js"></script>
     <script src="assets/js/script.js"></script>

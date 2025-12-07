@@ -124,43 +124,14 @@ function reloadCurrentPage() {
 // === Уведомления ===
 function showNotification(message) {
     const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed; top: 80px; right: 20px;
-        background: #4CAF50; color: white;
-        padding: 1rem 1.5rem; border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        z-index: 1000; animation: slideIn 0.3s ease;
-    `;
+    notification.className = 'notification';
     notification.textContent = message;
     document.body.appendChild(notification);
     
     setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
+        notification.classList.add('hide');
         setTimeout(() => notification.remove(), 300);
     }, 2000);
-}
-
-// === Главная страница - популярные книги ===
-async function displayPopularBooks() {
-    const grid = document.getElementById('popularBooksGrid');
-    if (!grid) return;
-
-    grid.innerHTML = '<div class="section-message">Танымал кітаптар жүктелуде...</div>';
-
-    try {
-        const popularBooks = await getPopularBooks(12);
-        if (!popularBooks.length) {
-            grid.innerHTML = '<div class="section-message error">Қазір танымал кітаптар қолжетімсіз.</div>';
-            return;
-        }
-
-        booksCache = popularBooks;
-        grid.innerHTML = '';
-        popularBooks.forEach(book => grid.appendChild(createBookCard(book)));
-    } catch (error) {
-        console.error('Ошибка загрузки:', error);
-        grid.innerHTML = '<div class="section-message error">Қазір кітаптарды көрсету мүмкін емес.</div>';
-    }
 }
 
 // === Страница поиска - инициализация ===
@@ -346,21 +317,114 @@ function displayBookList(containerId, emptyId, books, listType) {
 
 // === Инициализация при загрузке страницы ===
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('popularBooksGrid')) displayPopularBooks();
     if (document.getElementById('searchInput')) initSearch();
     if (document.querySelector('.my-books-section')) initMyBooks();
+    initAuth();
 });
 
-// === Анимации для уведомлений ===
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(400px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(400px); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
+// === Аутентификация (минимум логики для демо) ===
+function initAuth() {
+    const loginBtn = document.getElementById('loginBtn');
+    const authModal = document.getElementById('authModal');
+    const authClose = document.getElementById('authClose');
+    const authTabs = document.querySelectorAll('[data-auth-tab]');
+    const authForms = document.querySelectorAll('[data-auth-form]');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const USERS_KEY = 'libUsers';
+    const CURRENT_USER_KEY = 'libCurrentUser';
+
+    if (!loginBtn || !authModal) return;
+
+    const setMode = (mode) => {
+        authTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.authTab === mode));
+        authForms.forEach(form => form.classList.toggle('active', form.dataset.authForm === mode));
+    };
+
+    const openModal = (mode = 'login') => {
+        setMode(mode);
+        authModal.classList.add('open');
+        authModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeModal = () => {
+        authModal.classList.remove('open');
+        authModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        loginForm?.reset();
+        registerForm?.reset();
+    };
+
+    const updateButton = () => {
+        const currentUser = localStorage.getItem(CURRENT_USER_KEY);
+        if (currentUser) {
+            loginBtn.textContent = currentUser;
+            loginBtn.classList.add('btn-logged');
+        } else {
+            loginBtn.textContent = 'Кіру';
+            loginBtn.classList.remove('btn-logged');
+        }
+    };
+
+    updateButton();
+
+    loginBtn.addEventListener('click', () => {
+        const currentUser = localStorage.getItem(CURRENT_USER_KEY);
+        if (currentUser) {
+            if (confirm('Шығу керек пе?')) {
+                localStorage.removeItem(CURRENT_USER_KEY);
+                updateButton();
+                showNotification('Сіз жүйеден шықтыңыз');
+            }
+            return;
+        }
+        openModal('login');
+    });
+
+    authClose?.addEventListener('click', closeModal);
+    authModal.addEventListener('click', (event) => {
+        if (event.target === authModal) closeModal();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && authModal.classList.contains('open')) closeModal();
+    });
+    authTabs.forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.authTab)));
+
+    loginForm?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const username = document.getElementById('authLogin').value.trim();
+        const password = document.getElementById('authPassword').value.trim();
+        const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+        const match = users.find(user => user.username === username && user.password === password);
+        if (!match) {
+            showNotification('Қате логин немесе құпия сөз');
+            return;
+        }
+        localStorage.setItem(CURRENT_USER_KEY, username);
+        closeModal();
+        updateButton();
+        showNotification('Сәтті кірдіңіз');
+    });
+
+    registerForm?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const username = document.getElementById('authRegLogin').value.trim();
+        const password = document.getElementById('authRegPassword').value.trim();
+        if (username.length < 3 || password.length < 4) {
+            showNotification('Кемінде 3 таңбалы логин және 4 таңбалы құпия сөз');
+            return;
+        }
+        const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+        if (users.some(user => user.username === username)) {
+            showNotification('Бұл логин қолданылып жатыр');
+            return;
+        }
+        users.push({ username, password });
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        localStorage.setItem(CURRENT_USER_KEY, username);
+        closeModal();
+        updateButton();
+        showNotification('Тіркелу сәтті өтті');
+    });
+}

@@ -46,6 +46,7 @@ function cleanTitle(title) {
         .trim();
 }
 
+/*
 // Определение жанра
 const genreRules = [
     { genre: 'Фантастика', keywords: { title: ['harry potter', 'wizard', 'lord of the rings', 'hobbit', 'dune', 'space', 'hitchhiker'] } },
@@ -93,7 +94,7 @@ function getIconForGenre(genre) {
         'Мемуары': '📝'
     };
     return icons[genre] || '📖';
-}
+}  */
 
 // Загрузка CSV при старте
 async function loadBooksFromCSV() {
